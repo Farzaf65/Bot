@@ -1,0 +1,1053 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>DNS چنجر</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+/* Layout: one phone-width column. Round language only: circles, pills, soft capsules, radar rings behind the power ring. Single dark look by choice (gaming). */
+:root{
+  --bg:#070b12;
+  --surface:#0d1420;
+  --surface-2:#131d2e;
+  --line:#1f2e46;
+  --fg:#eaf1fb;
+  --muted:#8193ac;
+  --accent:#22d3ee;
+  --accent-ink:#021c22;
+  --violet:#7c5cff;
+  --good:#4ade80;
+  --warn:#fbbf24;
+  --bad:#f87171;
+  --font:'Vazirmatn',system-ui,'Segoe UI',Tahoma,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,'SFMono-Regular',Menlo,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{min-height:100%}
+body{
+  background:var(--bg);color:var(--fg);font-family:var(--font);font-size:15px;line-height:1.75;
+  padding-left:max(16px,env(safe-area-inset-left,0px));
+  padding-right:max(16px,env(safe-area-inset-right,0px));
+  padding-block:0;
+}
+body::before{
+  content:"";position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:
+    radial-gradient(60% 34% at 50% 0%,rgba(34,211,238,.2),transparent 70%),
+    radial-gradient(50% 30% at 105% 42%,rgba(124,92,255,.18),transparent 70%),
+    radial-gradient(45% 26% at -5% 78%,rgba(34,211,238,.1),transparent 70%),
+    repeating-radial-gradient(circle at 50% 250px,transparent 0 40px,rgba(130,160,200,.08) 40px 41px);
+  -webkit-mask-image:linear-gradient(#000 45%,transparent 96%);
+  mask-image:linear-gradient(#000 45%,transparent 96%);
+}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.app{position:relative;z-index:1;max-width:440px;margin:0 auto;padding-block:16px 40px}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums;direction:ltr;unicode-bidi:isolate}
+
+/* header */
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px}
+.hl{display:flex;align-items:center;gap:10px;min-width:0}
+.brand{display:flex;align-items:center;gap:10px;font-weight:900;font-size:19px;letter-spacing:-.2px}
+.brand svg{width:34px;height:34px;flex:none;filter:drop-shadow(0 0 10px rgba(34,211,238,.35))}
+.burger{width:46px;height:46px;border-radius:50%;border:1px solid var(--line);background:rgba(13,20,32,.8);display:grid;place-items:center;padding:0;flex:none}
+.burger svg{width:22px;height:22px;stroke:var(--fg);fill:none;stroke-width:2;stroke-linecap:round}
+.chip{display:inline-flex;align-items:center;gap:8px;padding:4px 14px;border-radius:999px;background:rgba(13,20,32,.8);border:1px solid var(--line);font-size:13px;color:var(--muted)}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--muted)}
+.chip[data-s="on"]{color:var(--fg);border-color:rgba(34,211,238,.5)}
+.chip[data-s="on"] .dot{background:var(--accent);box-shadow:0 0 10px var(--accent)}
+.chip[data-s="connecting"] .dot{background:var(--warn)}
+.demo{font-size:12.5px;color:var(--muted);margin:0 0 4px;text-align:center}
+
+h2{font-size:22px;font-weight:900;margin:0 0 4px;text-wrap:balance}
+.sub{color:var(--muted);font-size:13.5px;margin:0 0 16px}
+h3{font-size:15px;margin:0;font-weight:800}
+
+/* power ring */
+.stage{display:grid;place-items:center;padding:14px 0 4px}
+.ringbox{position:relative;width:244px;height:244px;display:grid;place-items:center}
+.halo{position:absolute;inset:-26px;border-radius:50%;background:conic-gradient(from 0deg,var(--accent),var(--violet),rgba(34,211,238,.15) 55%,var(--accent));-webkit-mask:radial-gradient(closest-side,transparent 62%,#000 72%,transparent 100%);mask:radial-gradient(closest-side,transparent 62%,#000 72%,transparent 100%);opacity:0;transition:opacity .6s}
+.ringbox[data-s="on"] .halo{opacity:.8;animation:rot 8s linear infinite}
+.ringbox[data-s="connecting"] .halo{opacity:.4;animation:rot 2s linear infinite}
+.orbit{position:absolute;inset:0;border-radius:50%;border:1.5px dashed rgba(130,160,200,.28)}
+.ringbox[data-s="on"] .orbit{border-color:rgba(34,211,238,.5);animation:rot 24s linear infinite}
+.orbit::after{content:"";position:absolute;top:-4px;left:50%;width:8px;height:8px;margin-left:-4px;border-radius:50%;background:var(--accent);box-shadow:0 0 12px var(--accent);opacity:0}
+.ringbox[data-s="on"] .orbit::after{opacity:1}
+@keyframes rot{to{transform:rotate(360deg)}}
+.power{position:relative;width:204px;height:204px;border-radius:50%;border:1px solid var(--line);background:radial-gradient(circle at 50% 30%,#1a2840,var(--surface) 70%);display:grid;place-items:center;padding:0;box-shadow:inset 0 1px 0 rgba(255,255,255,.06),0 20px 40px rgba(0,0,0,.45)}
+.ringbox[data-s="on"] .power{border-color:rgba(34,211,238,.45)}
+.power svg.ring{position:absolute;inset:-1px;width:calc(100% + 2px);height:calc(100% + 2px);transform:rotate(-90deg)}
+.power .track{stroke:var(--line)}
+.power .arc{stroke-linecap:round;stroke-dasharray:578;stroke-dashoffset:578;transition:stroke-dashoffset .7s ease}
+.ringbox[data-s="on"] .arc{stroke-dashoffset:0;filter:drop-shadow(0 0 6px rgba(34,211,238,.8))}
+.ringbox[data-s="connecting"] .arc{stroke-dasharray:150 428;stroke-dashoffset:0}
+.ringbox[data-s="connecting"] svg.ring{animation:spin 1.1s linear infinite}
+@keyframes spin{from{transform:rotate(-90deg)}to{transform:rotate(270deg)}}
+.power .ico{width:64px;height:64px;stroke:var(--muted);transition:stroke .3s,filter .3s}
+.ringbox[data-s="on"] .ico{stroke:var(--accent);filter:drop-shadow(0 0 8px rgba(34,211,238,.7))}
+.power:active{transform:scale(.98)}
+.state{margin-top:14px;text-align:center}
+.state b{display:block;font-size:26px;font-weight:900;line-height:1.4}
+.state[data-s="on"] b{background:linear-gradient(90deg,var(--accent),#a5b4fc);-webkit-background-clip:text;background-clip:text;color:transparent}
+.state span{color:var(--muted);font-size:13.5px;display:block}
+.timer{font-family:var(--mono);direction:ltr;font-size:15px;color:var(--muted);margin-top:4px;letter-spacing:1px}
+.state[data-s="on"] .timer{color:var(--fg)}
+
+/* path: app > services > internet, lit step by step */
+.path{margin:18px 0 6px;display:flex;align-items:flex-start;gap:4px}
+.node{display:grid;justify-items:center;gap:6px;width:88px;flex:none;font-size:12px;color:var(--muted);text-align:center;min-width:0}
+.node small{font-size:12px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;transition:color .3s}
+.nbox{width:54px;height:54px;border-radius:50%;border:1px solid var(--line);background:var(--surface-2);display:grid;place-items:center;transition:border-color .3s,box-shadow .3s}
+.nbox svg{width:26px;height:26px;fill:none;stroke:var(--muted);stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;transition:stroke .3s}
+.wire{position:relative;flex:1;min-width:12px;height:2px;margin-top:26px;border-radius:2px;background:linear-gradient(90deg,var(--line) 6px,transparent 6px) 0 0/12px 2px repeat-x}
+.wire::after{content:"";position:absolute;top:0;inset-inline-start:0;height:2px;width:0;background:linear-gradient(90deg,var(--accent) 6px,transparent 6px) 0 0/12px 2px repeat-x;filter:drop-shadow(0 0 3px rgba(34,211,238,.7));transition:width .55s linear;animation:flow .7s linear infinite}
+@keyframes flow{to{background-position:-12px 0}}
+.path.k4 .node{width:70px}
+.path.k4 .nbox{width:48px;height:48px}
+.path.k4 .nbox svg{width:23px;height:23px}
+.path.k4 .wire{margin-top:23px}
+.path.k4 .node small{white-space:normal;line-height:1.35;overflow-wrap:anywhere}
+.path.a2 .w1::after,.path.a3 .w2::after,.path.a4 .w3::after{width:100%}
+.path.a1 .n1 .nbox,.path.a2 .n2 .nbox,.path.a3 .n3 .nbox,.path.a4 .n4 .nbox{border-color:rgba(34,211,238,.6);box-shadow:0 0 18px rgba(34,211,238,.25)}
+.path.a1 .n1 svg,.path.a2 .n2 svg,.path.a3 .n3 svg,.path.a4 .n4 svg{stroke:var(--accent)}
+.path.a1 .n1 small,.path.a2 .n2 small,.path.a3 .n3 small,.path.a4 .n4 small{color:var(--fg)}
+.path.a2 .n2 .nbox,.path.a2 .n2 svg,.path.a3 .n3 .nbox,.path.a3 .n3 svg,.path.a4 .n4 .nbox,.path.a4 .n4 svg{transition-delay:.5s}
+.path.a2 .w1::before,.path.a3 .w2::before,.path.a4 .w3::before{content:"";position:absolute;top:-3px;inset-inline-start:0;width:8px;height:8px;border-radius:50%;background:#fff;box-shadow:0 0 10px var(--accent),0 0 4px var(--accent);opacity:0;animation:travel .55s linear 1 forwards}
+.path.on .wire::before{content:"";position:absolute;top:-3px;inset-inline-start:0;width:8px;height:8px;border-radius:50%;background:#fff;box-shadow:0 0 10px var(--accent),0 0 4px var(--accent);opacity:0;animation:travel 1.5s linear infinite}
+.path.on .w2::before{animation-delay:.5s}
+.path.on .w3::before{animation-delay:1s}
+@keyframes travel{0%{inset-inline-start:0;opacity:0}15%{opacity:1}85%{opacity:1}100%{inset-inline-start:calc(100% - 8px);opacity:0}}
+.pmsg{text-align:center;color:var(--muted);font-size:13px;min-height:1.7em;margin:0 0 22px}
+.path.on~.pmsg{color:var(--good)}
+
+/* dns fields: capsules */
+.sech{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.hint{color:var(--muted);font-size:13px;margin:2px 0 14px}
+.link{background:none;border:0;color:var(--accent);padding:4px 0;font-weight:700;white-space:nowrap}
+.fld{position:relative;display:grid;grid-template-columns:auto minmax(0,1fr);grid-template-areas:"i l" "i n";align-items:center;column-gap:14px;border:1.5px solid var(--line);border-radius:36px;padding:10px 20px 10px 12px;background:rgba(13,20,32,.72);transition:border-color .2s,box-shadow .2s}
+.fld:focus-within{border-color:var(--accent);box-shadow:0 0 0 4px rgba(34,211,238,.12)}
+.fld .gi{grid-area:i;width:44px;height:44px;border-radius:50%;background:rgba(34,211,238,.1);display:grid;place-items:center}
+.fld .gi svg{width:22px;height:22px;fill:none;stroke:var(--accent);stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.fld label{grid-area:l;font-size:12.5px;color:var(--muted);line-height:1.5;display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+.fld label b{color:var(--fg);font-weight:700}
+.fld label em{font-style:normal;font-size:11.5px;border:1px solid var(--line);border-radius:999px;padding:0 8px}
+.fld input{grid-area:n;width:100%;min-width:0;min-height:30px;border:0;background:transparent;outline:0;font-size:16px;text-align:left;padding:0}
+.fld input::placeholder{color:#3b4b66}
+.fld.bad{border-color:var(--bad);box-shadow:0 0 0 4px rgba(248,113,113,.14);animation:shake 1.6s ease-in-out infinite}
+.fld.bad .gi{background:rgba(248,113,113,.14)}
+.fld.bad .gi svg{stroke:var(--bad)}
+.fld.lock{opacity:.55}
+@keyframes shake{0%,30%,100%{transform:none}4%,12%,20%{transform:translateX(-8px)}8%,16%,24%{transform:translateX(8px)}}
+.msg{color:var(--bad);font-size:13px;margin:4px 20px 0}
+.msg.warn{color:var(--warn)}
+.msg:empty{display:none}
+.fgap{display:grid;gap:10px}
+.v6row{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:12px 20px;border-radius:36px;border:1.5px dashed var(--line);margin:2px 0}
+.v6row b{font-size:14.5px;font-weight:700;display:block}
+.v6row p{margin:0;font-size:12.5px;color:var(--muted);line-height:1.6}
+.acts2{display:flex;gap:12px;align-items:center;margin-top:16px;flex-wrap:wrap}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:46px;padding:0 22px;border-radius:999px;border:1px solid var(--line);background:var(--surface-2);font-weight:700}
+.btn.primary{background:linear-gradient(135deg,var(--accent),#5eead4);color:var(--accent-ink);border-color:transparent}
+.btn.ghost{border-color:rgba(34,211,238,.5);color:var(--accent);background:rgba(34,211,238,.06)}
+.btn.block{width:100%}
+.btn.sm{min-height:36px;padding:0 16px;font-size:13.5px}
+.btn svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}
+a.btn{text-decoration:none;color:inherit}
+a.btn.primary{color:var(--accent-ink)}
+.copy{flex:none;min-height:34px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:var(--surface-2);font-size:12.5px;color:var(--fg)}
+
+/* wireguard, dock, both */
+.eye{position:absolute;top:12px;inset-inline-end:20px;background:none;border:0;color:var(--accent);font-size:12.5px;padding:0;min-height:0;font-weight:700}
+.ta{width:100%;min-height:180px;border-radius:26px;border:1.5px solid var(--line);background:var(--bg);color:var(--fg);padding:14px 18px;font-size:13px;direction:ltr;text-align:left;resize:vertical}
+.ta:focus{outline:0;border-color:var(--accent)}
+.bothrow{margin:4px 0 6px;border-style:solid;border-color:rgba(124,92,255,.55);background:rgba(124,92,255,.09)}
+.dock{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(14px + env(safe-area-inset-bottom,0px));z-index:20;width:min(calc(100% - 32px),340px);display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:5px;border-radius:999px;background:rgba(13,20,32,.93);border:1px solid var(--line);backdrop-filter:blur(10px);box-shadow:0 12px 32px rgba(0,0,0,.5)}
+.dock button{display:flex;align-items:center;justify-content:center;gap:8px;min-height:48px;border:0;border-radius:999px;background:transparent;color:var(--muted);font-weight:700}
+.dock button svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.dock button[aria-current="page"]{background:rgba(34,211,238,.14);color:var(--accent);box-shadow:inset 0 0 0 1px rgba(34,211,238,.4)}
+body.hasdock .app{padding-block:16px 116px}
+body.hasdock .toast{bottom:calc(86px + env(safe-area-inset-bottom,0px))}
+
+/* list */
+.search{width:100%;min-height:48px;border-radius:999px;border:1.5px solid var(--line);background:rgba(13,20,32,.72);padding:0 20px;margin-bottom:12px}
+.search:focus{outline:0;border-color:var(--accent)}
+.search::placeholder{color:var(--muted)}
+.chips{display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;margin-bottom:12px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.fchip{flex:none;min-height:36px;padding:0 16px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--muted);font-size:13.5px}
+.fchip[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:700}
+.list{display:grid;gap:12px}
+.item{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:14px;align-items:center;background:linear-gradient(180deg,rgba(19,29,46,.7),rgba(13,20,32,.85));border:1px solid var(--line);border-radius:34px;padding:12px 14px 12px 12px}
+.item[data-sel="1"]{border-color:rgba(34,211,238,.65);box-shadow:0 0 0 1px rgba(34,211,238,.2),0 8px 24px rgba(34,211,238,.1)}
+.av{width:48px;height:48px;border-radius:50%;display:grid;place-items:center;font-weight:900;font-size:19px;color:#fff;flex:none;text-shadow:0 1px 2px rgba(0,0,0,.35);box-shadow:inset 0 1px 0 rgba(255,255,255,.25)}
+.item .nm{font-weight:800}
+.item .ips{font-size:12.5px;color:var(--muted);display:block;line-height:1.55;overflow-wrap:anywhere}
+.tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
+.tag{font-size:11.5px;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:0 8px;line-height:1.6}
+.tag.v6{color:var(--violet);border-color:rgba(124,92,255,.5)}
+.acts{display:grid;gap:6px;justify-items:end}
+.star{width:36px;height:36px;border-radius:50%;border:0;background:transparent;display:grid;place-items:center;padding:0}
+.star svg{width:20px;height:20px;fill:none;stroke:var(--muted);stroke-width:1.8}
+.star[aria-pressed="true"] svg{fill:var(--warn);stroke:var(--warn)}
+.del{background:none;border:0;color:var(--bad);font-size:12.5px;padding:0}
+.empty{text-align:center;color:var(--muted);padding:28px 12px;border:1px dashed var(--line);border-radius:30px}
+.listfoot{margin-top:16px}
+
+/* settings */
+.gh{font-size:13px;font-weight:800;color:var(--accent);margin:22px 0 8px;letter-spacing:.2px}
+.card{background:linear-gradient(180deg,rgba(19,29,46,.7),rgba(13,20,32,.85));border:1px solid var(--line);border-radius:30px;padding:14px 18px}
+.grp{padding:0;overflow:hidden}
+.grp .srow{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:13px 20px;border-top:1px solid var(--line)}
+.grp .srow:first-child{border-top:0}
+.srow b{font-weight:700;font-size:14.5px;display:block}
+.srow p{margin:0;font-size:12.5px;color:var(--muted);line-height:1.6}
+.srow[data-off="1"]{opacity:.42}
+.sw{flex:none;width:50px;height:30px;border-radius:999px;border:1px solid var(--line);background:var(--surface-2);position:relative;padding:0}
+.sw::after{content:"";position:absolute;top:4px;inset-inline-start:4px;width:20px;height:20px;border-radius:50%;background:var(--muted);transition:transform .2s,background .2s}
+.sw[aria-checked="true"]{background:rgba(34,211,238,.22);border-color:var(--accent)}
+.sw[aria-checked="true"]::after{background:var(--accent);transform:translateX(-20px)}
+.sw:disabled,.btn:disabled,.numin:disabled{cursor:default}
+.numin{flex:none;width:90px;min-height:40px;border-radius:999px;border:1px solid var(--line);background:var(--bg);padding:0 14px;color:var(--fg);text-align:left}
+
+/* sheet */
+.modal{position:fixed;inset:0;z-index:40;background:rgba(3,6,10,.72);display:flex;align-items:flex-end;justify-content:center}
+.mcard{width:min(100%,440px);max-height:86vh;overflow:auto;background:linear-gradient(180deg,#121c2d,var(--surface));border:1px solid var(--line);border-bottom:0;border-radius:36px 36px 0 0;padding:22px max(20px,env(safe-area-inset-left,0px)) calc(22px + env(safe-area-inset-bottom,0px))}
+.mcard p{margin:0 0 8px;color:var(--muted);font-size:14px}
+.mcard h3{font-size:18px;margin-bottom:10px}
+.mact{display:flex;gap:10px;margin-top:16px}
+.sum{display:grid;gap:4px;margin:10px 0 4px;padding:10px 16px;border-radius:24px;background:var(--surface-2);font-size:13.5px}
+.apps label{display:flex;align-items:center;gap:12px;min-height:48px;border-top:1px solid var(--line);font-size:14.5px}
+.apps input{width:20px;height:20px;accent-color:var(--accent)}
+.fplain{display:grid;gap:4px;font-size:13px;color:var(--muted)}
+.fplain input{min-height:48px;border-radius:999px;border:1.5px solid var(--line);background:var(--bg);padding:0 20px;color:var(--fg)}
+.fplain input:focus{outline:0;border-color:var(--accent)}
+.err{color:var(--bad);font-size:13px;margin:0;min-height:1.4em}
+
+/* about */
+.appcard{display:flex;align-items:center;gap:14px;margin-bottom:18px}
+.appcard svg{width:52px;height:52px;flex:none}
+.appcard b{display:block;font-size:18px;font-weight:900}
+.appcard span{color:var(--muted);font-size:13px}
+.warn{display:grid;gap:10px;margin:10px 0 22px;padding:0;list-style:none}
+.warn li{display:grid;grid-template-columns:auto minmax(0,1fr);gap:12px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:28px;padding:12px 16px 12px 18px;font-size:14px}
+.warn .wi{width:36px;height:36px;border-radius:50%;background:rgba(251,191,36,.12);display:grid;place-items:center}
+.warn .wi svg{width:18px;height:18px;fill:none;stroke:var(--warn);stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.faq details{background:var(--surface);border:1px solid var(--line);border-radius:26px;padding:0 20px;margin-bottom:8px}
+.faq summary{min-height:48px;display:flex;align-items:center;cursor:pointer;font-weight:500}
+.faq p{margin:0 0 12px;color:var(--muted);font-size:14px}
+.ver{color:var(--muted);font-size:12.5px;text-align:center;margin-top:20px}
+
+/* menu */
+.scrim{position:fixed;inset:0;z-index:30;background:rgba(3,6,10,.68);opacity:0;visibility:hidden;transition:opacity .25s,visibility 0s .25s}
+.scrim.open{opacity:1;visibility:visible;transition-delay:0s}
+.drawer{position:fixed;top:0;bottom:0;right:0;z-index:31;width:min(86%,330px);background:linear-gradient(180deg,#0f1827,var(--bg));border-left:1px solid var(--line);border-radius:36px 0 0 36px;padding-top:calc(16px + env(safe-area-inset-top,0px));padding-bottom:calc(16px + env(safe-area-inset-bottom,0px));padding-left:16px;padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;overflow-y:auto;transform:translateX(105%);visibility:hidden;transition:transform .28s ease,visibility 0s .28s}
+.drawer.open{transform:none;visibility:visible;transition-delay:0s}
+.dhead{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}
+.dnav{display:grid;gap:4px}
+.dnav button{display:flex;align-items:center;gap:12px;width:100%;min-height:52px;padding:0 18px;border:0;border-radius:999px;background:transparent;color:var(--fg);font-weight:500;text-align:start}
+.dnav svg{width:22px;height:22px;fill:none;stroke:var(--muted);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.dnav button[aria-current="page"]{background:rgba(34,211,238,.12);color:var(--accent)}
+.dnav button[aria-current="page"] svg{stroke:var(--accent)}
+.dsep{height:1px;background:var(--line);margin:14px 0}
+.dsup{display:grid;gap:10px}
+.dsup b{font-size:16px}
+.dsup p{margin:0;color:var(--muted);font-size:13.5px}
+.dsup .ipline{display:flex;align-items:center;gap:10px}
+.dsup .ip{flex:1;min-width:0;font-weight:700;overflow-wrap:anywhere;user-select:all}
+.dsup .shot{color:var(--fg);font-size:13px;background:rgba(251,191,36,.1);border-radius:22px;padding:8px 14px}
+
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translate(-50%,12px);background:var(--surface-2);border:1px solid var(--line);padding:8px 18px;border-radius:999px;font-size:13.5px;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:60;max-width:calc(100% - 32px)}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+
+
+/* ===== polish: soft, springy motion ===== */
+:root{--ease:cubic-bezier(.22,1,.36,1);--spring:cubic-bezier(.34,1.56,.64,1)}
+html{scroll-behavior:smooth;-webkit-tap-highlight-color:transparent}
+@keyframes enter{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@keyframes fadein{from{opacity:0}to{opacity:1}}
+@keyframes sheet{from{transform:translateY(60px);opacity:0}to{transform:none;opacity:1}}
+@keyframes dockin{from{transform:translate(-50%,48px);opacity:0}to{transform:translate(-50%,0);opacity:1}}
+@keyframes swap{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@keyframes breathe{0%,100%{box-shadow:inset 0 1px 0 rgba(255,255,255,.06),0 20px 40px rgba(0,0,0,.45),0 0 0 0 rgba(34,211,238,0)}50%{box-shadow:inset 0 1px 0 rgba(255,255,255,.06),0 20px 40px rgba(0,0,0,.45),0 0 34px 2px rgba(34,211,238,.16)}}
+@keyframes burst{0%{transform:scale(.8);opacity:.9}100%{transform:scale(1.55);opacity:0}}
+@keyframes beat{0%,100%{box-shadow:0 0 0 0 rgba(34,211,238,.55)}60%{box-shadow:0 0 0 7px rgba(34,211,238,0)}}
+@keyframes blink{50%{opacity:.3}}
+@keyframes lift{0%{transform:scale(1)}40%{transform:scale(1.14)}100%{transform:scale(1.06)}}
+
+section[id^="s-"]:not([hidden]){animation:enter .5s var(--ease) both}
+.stag .item,.stag #setBody>*,.stag .warn li,.stag .faq details,.stag .appcard,.stag .fgap>div,.stag .v6row,.stag .acts2{animation:enter .55s var(--ease) both;animation-delay:calc(var(--i,0)*45ms)}
+
+button,.btn,a.btn,.fchip,.link,.copy{transition:transform .3s var(--spring),background-color .25s,border-color .25s,box-shadow .3s,color .25s,opacity .25s;-webkit-user-select:none;user-select:none;touch-action:manipulation}
+button:active:not(:disabled),a.btn:active{transform:scale(.95)}
+.power:active{transform:scale(.97)}
+@media (hover:hover){
+  .btn:hover:not(:disabled){border-color:rgba(34,211,238,.55);box-shadow:0 6px 22px rgba(34,211,238,.14)}
+  .btn.primary:hover{box-shadow:0 8px 26px rgba(34,211,238,.35);filter:brightness(1.06)}
+  .item:hover{border-color:rgba(34,211,238,.35)}
+  .fchip:hover{color:var(--fg)}
+  .dnav button:hover{background:rgba(34,211,238,.07)}
+}
+.btn.primary{box-shadow:0 6px 20px rgba(34,211,238,.22)}
+.item{transition:border-color .35s,box-shadow .35s,transform .3s var(--spring)}
+.item:active{transform:scale(.985)}
+.sw{transition:background-color .3s,border-color .3s}
+.sw::after{transition:transform .4s var(--spring),background-color .25s}
+.sw[aria-checked="true"]{box-shadow:0 0 14px rgba(34,211,238,.25)}
+.fld .gi,.fld .gi svg{transition:transform .35s var(--spring),background-color .25s}
+.fld:focus-within .gi{transform:scale(1.08);background:rgba(34,211,238,.2)}
+.fld,.v6row,.bothrow{transition:border-color .3s,box-shadow .3s,background-color .3s,opacity .3s}
+.msg{animation:swap .3s var(--ease) both}
+.search{transition:border-color .25s,box-shadow .25s}
+.search:focus{box-shadow:0 0 0 4px rgba(34,211,238,.12)}
+
+.ringbox[data-s="off"] .power{animation:breathe 3.8s ease-in-out infinite}
+.power{transition:border-color .5s,transform .3s var(--spring)}
+.ringbox::after{content:"";position:absolute;inset:20px;border-radius:50%;border:2px solid var(--accent);opacity:0;pointer-events:none}
+.ringbox.burst::after{animation:burst 1s var(--ease) both}
+.ringbox.burst::before{content:"";position:absolute;inset:20px;border-radius:50%;border:1.5px solid var(--violet);opacity:0;pointer-events:none;animation:burst 1.2s var(--ease) .12s both}
+.state b,.state span,.pmsg{transition:color .4s}
+.swap{animation:swap .4s var(--ease) both}
+.chip{transition:border-color .4s,color .4s,background-color .4s}
+.chip[data-s="on"] .dot{animation:beat 2s ease-out infinite}
+.chip[data-s="connecting"] .dot{animation:blink .9s ease-in-out infinite}
+.nbox{transition:border-color .4s,box-shadow .4s,transform .55s var(--spring)}
+.path.a1 .n1 .nbox,.path.a2 .n2 .nbox,.path.a3 .n3 .nbox,.path.a4 .n4 .nbox{transform:scale(1.07)}
+.path.on .nbox{animation:none}
+
+.dock{overflow:hidden;-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)}
+.dock:not([hidden]){animation:dockin .6s var(--spring) both}
+.dock::before{content:"";position:absolute;top:5px;bottom:5px;inset-inline-start:5px;width:calc(50% - 7px);border-radius:999px;background:linear-gradient(135deg,rgba(34,211,238,.2),rgba(124,92,255,.2));box-shadow:inset 0 0 0 1px rgba(34,211,238,.4),0 0 18px rgba(34,211,238,.15);transition:transform .5s var(--spring)}
+.dock[data-tab="dns"]::before{transform:translateX(calc(-100% - 4px))}
+.dock button{position:relative;z-index:1}
+.dock button[aria-current="page"]{background:transparent;box-shadow:none;color:var(--accent)}
+.dock button svg{transition:transform .4s var(--spring)}
+.dock button[aria-current="page"] svg{transform:scale(1.12)}
+
+.scrim{-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px)}
+.drawer{transition:transform .45s var(--ease),visibility 0s .45s}
+.drawer.open{transition-delay:0s}
+.drawer.open .dnav button,.drawer.open .dsup,.drawer.open .gh{animation:enter .55s var(--ease) both}
+.drawer.open .dnav button:nth-child(1){animation-delay:.08s}
+.drawer.open .dnav button:nth-child(2){animation-delay:.13s}
+.drawer.open .dnav button:nth-child(3){animation-delay:.18s}
+.drawer.open .dnav button:nth-child(4){animation-delay:.23s}
+.drawer.open .gh{animation-delay:.28s}
+.drawer.open .dsup{animation-delay:.33s}
+.dnav button{transition:background-color .25s,color .25s,transform .3s var(--spring)}
+.modal:not([hidden]){animation:fadein .25s ease both;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+.modal:not([hidden]) .mcard{animation:sheet .5s var(--ease) both}
+.toast{transition:opacity .3s,transform .5s var(--spring);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);box-shadow:0 10px 30px rgba(0,0,0,.45);background:rgba(19,29,46,.92)}
+.toast.show::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--accent);margin-inline-end:10px;box-shadow:0 0 8px var(--accent)}
+
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation:none!important;transition:none!important}
+}
+</style>
+
+<div class="app" dir="rtl" lang="fa">
+  <header class="top">
+    <div class="hl">
+      <button class="burger" id="burger" aria-label="منو" aria-expanded="false" aria-controls="drawer"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h10"/></svg></button>
+      <div class="brand">
+        <svg viewBox="0 0 34 34" aria-hidden="true"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#22d3ee"/><stop offset="1" stop-color="#7c5cff"/></linearGradient></defs><circle cx="17" cy="17" r="16.5" fill="#0d1420" stroke="#1f2e46"/><path d="M7 18h4l2.4-7 4 13 3-9 1.5 3H27" fill="none" stroke="url(#lg)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span>DNS چنجر</span>
+      </div>
+    </div>
+    <span class="chip" id="chip" data-s="off"><i class="dot"></i><span id="chipText">قطع</span></span>
+  </header>
+  <p class="demo">نمونه نمایشی برای دیدن ظاهر. اتصال واقعی فقط تو اپ اندروید انجام می‌شه.</p>
+
+  <!-- HOME -->
+  <section id="s-home" aria-label="خانه">
+    <div class="v6row bothrow" id="bothRow" hidden><div><b>استفاده همزمان از هر دو سرویس</b><p>وایرگارد و DNS با هم فعال می‌شن.</p></div><button class="sw" id="swBoth" role="switch" aria-checked="false" aria-label="استفاده همزمان"></button></div>
+    <div class="stage">
+      <div class="ringbox" id="ringbox" data-s="off">
+        <span class="halo"></span><span class="orbit"></span>
+        <button class="power" id="power" aria-label="اتصال یا قطع">
+          <svg class="ring" viewBox="0 0 200 200" aria-hidden="true"><defs><linearGradient id="rg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#22d3ee"/><stop offset="1" stop-color="#7c5cff"/></linearGradient></defs><circle class="track" cx="100" cy="100" r="92" fill="none" stroke-width="6"/><circle class="arc" cx="100" cy="100" r="92" fill="none" stroke-width="6" stroke="url(#rg)"/></svg>
+          <svg class="ico" viewBox="0 0 24 24" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v8"/><path d="M6.3 6.8a8 8 0 1 0 11.4 0"/></svg>
+        </button>
+      </div>
+      <div class="state" id="state" data-s="off"><b id="stTitle">قطع است</b><span id="stSub">DNS رو وارد کن و دکمه رو لمس کن</span><div class="timer" id="hTime">00:00:00</div></div>
+    </div>
+
+    <div class="path k3" id="path"></div>
+    <p class="pmsg" id="pathMsg" aria-live="polite"></p>
+
+    <div id="dnsPane">
+    <div class="sech"><h3>DNS دلخواه</h3><button class="link" data-go="list">انتخاب از لیست</button></div>
+    <p class="hint">آدرس DNS خودت یا هر شرکتی رو تایپ کن. فقط DNS اصلی با IPv4 (نسل ۴) اجباریه.</p>
+
+    <div class="fgap">
+      <div>
+        <div class="fld" id="fP4"><span class="gi"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.8 3 2.8 15 0 18M12 3c-2.8 3-2.8 15 0 18"/></svg></span><label for="inP4"><b>DNS اصلی</b><em>IPv4 · اجباری</em></label><input id="inP4" class="mono" inputmode="decimal" placeholder="8.8.8.8" autocomplete="off" spellcheck="false"></div>
+        <p class="msg" id="msgP4" role="alert"></p>
+      </div>
+      <div>
+        <div class="fld" id="fS4"><span class="gi"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.8 3 2.8 15 0 18M12 3c-2.8 3-2.8 15 0 18"/></svg></span><label for="inS4"><b>DNS دوم</b><em>IPv4 · اختیاری</em></label><input id="inS4" class="mono" inputmode="decimal" placeholder="8.8.4.4" autocomplete="off" spellcheck="false"></div>
+        <p class="msg" id="msgS4" role="alert"></p>
+      </div>
+      <div class="v6row"><div><b>IPv6 (نسل ۶)</b><p>اختیاری. اگه روشنش کنی، DNS اصلی IPv6 اجباری می‌شه.</p></div><button class="sw" id="sw6" role="switch" aria-checked="false" aria-label="IPv6"></button></div>
+      <div class="fgap" id="v6box" hidden>
+        <div>
+          <div class="fld" id="fP6"><span class="gi"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.8 3 2.8 15 0 18M12 3c-2.8 3-2.8 15 0 18"/></svg></span><label for="inP6"><b>DNS اصلی</b><em>IPv6 · اجباری</em></label><input id="inP6" class="mono" inputmode="text" placeholder="2001:4860:4860::8888" autocomplete="off" spellcheck="false"></div>
+          <p class="msg" id="msgP6" role="alert"></p>
+        </div>
+        <div>
+          <div class="fld" id="fS6"><span class="gi"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.8 3 2.8 15 0 18M12 3c-2.8 3-2.8 15 0 18"/></svg></span><label for="inS6"><b>DNS دوم</b><em>IPv6 · اختیاری</em></label><input id="inS6" class="mono" inputmode="text" placeholder="2001:4860:4860::8844" autocomplete="off" spellcheck="false"></div>
+          <p class="msg" id="msgS6" role="alert"></p>
+        </div>
+      </div>
+    </div>
+
+    <div class="acts2">
+      <button class="btn ghost" id="addBtn"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>افزودن سرویس DNS</button>
+      <button class="link" id="clearBtn">پاک کردن</button>
+    </div>
+    </div>
+
+    <div id="wgPane" hidden>
+      <div class="sech"><h3>کانفیگ وایرگارد</h3><button class="link" id="wgClear">پاک کردن</button></div>
+      <p class="hint">کانفیگ رو بچسبون یا فایل .conf رو انتخاب کن. تو این نمونه، کلیدها ذخیره نمی‌شن.</p>
+      <div class="acts2" style="margin:0 0 14px"><button class="btn ghost" id="wgPasteBtn">چسباندن کانفیگ</button><button class="btn" id="wgFileBtn">انتخاب فایل</button></div>
+      <input type="file" id="wgFile" accept=".conf,.txt,text/plain" hidden>
+      <div class="fgap" id="wgFields"></div>
+    </div>
+  </section>
+
+  <!-- LIST -->
+  <section id="s-list" aria-label="لیست DNS" hidden>
+    <h2>لیست DNS</h2>
+    <p class="sub">هر کدوم رو انتخاب کنی، تو فیلدهای خانه وارد می‌شه. استفاده از لیست اجباری نیست.</p>
+    <input class="search" id="q" type="search" placeholder="جستجو: اسم یا آدرس" autocomplete="off">
+    <div class="chips" id="chips" role="group" aria-label="دسته‌بندی"></div>
+    <div class="list" id="list"></div>
+    <div class="listfoot"><button class="btn ghost block" id="goAdd"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>افزودن سرویس DNS خودت</button></div>
+  </section>
+
+  <!-- SETTINGS -->
+  <section id="s-settings" aria-label="تنظیمات" hidden>
+    <h2>تنظیمات</h2>
+    <p class="sub">اعلان‌ها، اتصال خودکار، قفل و تنظیمات پیشرفته.</p>
+    <div id="setBody"></div>
+  </section>
+
+  <!-- ABOUT -->
+  <section id="s-about" aria-label="درباره" hidden>
+    <div class="card appcard">
+      <svg viewBox="0 0 34 34" aria-hidden="true"><circle cx="17" cy="17" r="16.5" fill="#0d1420" stroke="#1f2e46"/><path d="M7 18h4l2.4-7 4 13 3-9 1.5 3H27" fill="none" stroke="url(#lg)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <div><b>DNS چنجر</b><span>نسخه نمایشی 0.7</span></div>
+    </div>
+    <h3>هشدارها</h3>
+    <ul class="warn">
+      <li><span class="wi"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg></span><span>این اپ فقط DNS رو عوض می‌کنه. فیلترشکن نیست و IP تو رو مخفی نمی‌کنه.</span></li>
+      <li><span class="wi"><svg viewBox="0 0 24 24"><path d="M3 13h4l2-6 4 12 2-6h6"/></svg></span><span>سرعت و پینگ بعد از تغییر DNS تضمین نمی‌شه و به شبکه و اپراتور بستگی داره.</span></li>
+      <li><span class="wi"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="4"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span><span>اپ برای اعمال DNS از سرویس VPN اندروید استفاده می‌کنه. ترافیک تو ذخیره یا ارسال نمی‌شه.</span></li>
+      <li><span class="wi"><svg viewBox="0 0 24 24"><path d="M12 3l9 16H3z"/><path d="M12 10v4M12 17h.01"/></svg></span><span>با DNS ناشناس احتیاط کن. سرور DNS می‌تونه ببینه کدوم سایت‌ها رو باز می‌کنی.</span></li>
+    </ul>
+    <h3 style="margin-bottom:10px">سؤالات متداول</h3>
+    <div class="faq">
+      <details><summary>چرا اندروید کلید VPN نشون می‌ده؟</summary><p>اپ‌های تغییر DNS بدون روت از همین سرویس استفاده می‌کنن. فقط درخواست‌های DNS تغییر می‌کنن و بقیه ترافیک مستقیم می‌ره.</p></details>
+      <details><summary>اتصال برقرار نمی‌شه، چه کنم؟</summary><p>آدرس DNS رو دوباره چک کن، یه DNS دیگه امتحان کن و مجوز VPN رو دوباره تأیید کن. اگه نشد، اینترنت گوشی رو یک بار قطع و وصل کن.</p></details>
+      <details><summary>کدوم DNS برای بازی بهتره؟</summary><p>بستگی به اپراتور داره. چند DNS رو روی همون اینترنتی که بازی می‌کنی امتحان کن و علاقه‌مندی‌هات رو ستاره بزن.</p></details>
+      <details><summary>وایرگارد و DNS رو با هم می‌تونم استفاده کنم؟</summary><p>از تنظیمات پیشرفته وایرگارد رو روشن کن. تو صفحه خانه گزینه استفاده همزمان ظاهر می‌شه. این حالت به شرایط اینترنت بستگی داره و ممکنه پینگ رو بالا ببره.</p></details>
+      <details><summary>IPv6 رو باید روشن کنم؟</summary><p>لازم نیست. IPv4 برای کار اپ کافیه و IPv6 فقط وقتی مفیده که شبکه‌ات پشتیبانی کنه.</p></details>
+    </div>
+  </section>
+</div>
+
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer" role="dialog" aria-modal="true" aria-label="منوی اصلی" aria-hidden="true" dir="rtl">
+  <div class="dhead">
+    <div class="brand"><svg viewBox="0 0 34 34" aria-hidden="true"><circle cx="17" cy="17" r="16.5" fill="#0d1420" stroke="#1f2e46"/><path d="M7 18h4l2.4-7 4 13 3-9 1.5 3H27" fill="none" stroke="url(#lg)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg><span>DNS چنجر</span></div>
+    <button class="burger" id="drawerClose" aria-label="بستن منو"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+  </div>
+  <nav class="dnav" aria-label="صفحه‌ها">
+    <button data-go="home" aria-current="page"><svg viewBox="0 0 24 24"><path d="M4 11l8-7 8 7v8a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1z"/></svg>خانه</button>
+    <button data-go="list"><svg viewBox="0 0 24 24"><path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"/></svg>لیست DNS</button>
+    <button data-go="settings"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4L7 17M17 7l1.4-1.4"/></svg>تنظیمات</button>
+    <button data-go="about"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>درباره ما</button>
+  </nav>
+  <div class="dsep"></div>
+  <div class="gh" style="margin:0 0 8px">ارتباط با ما</div>
+  <div class="card dsup">
+    <b>پشتیبانی</b>
+    <p>سؤال یا مشکلی داشتی، تو تلگرام یا ایمیل پیام بده.</p>
+    <div class="ipline"><span class="ip mono">@PINGAMIRREZA</span><button class="copy" data-copytxt="@PINGAMIRREZA">کپی</button></div>
+    <a class="btn primary block" href="https://t.me/PINGAMIRREZA" target="_blank" rel="noopener">پیام در تلگرام</a>
+    <div class="ipline"><span class="ip mono" style="font-size:13px">farzad.km15@gmail.com</span><button class="copy" data-copytxt="farzad.km15@gmail.com">کپی</button></div>
+    <a class="btn block" href="mailto:farzad.km15@gmail.com">ارسال ایمیل</a>
+    <p class="shot">هر ایرادی داشتین یه اسکرین‌شات برای من بفرستید. قبل از فرستادن مطمئن شید کلید خصوصی وایرگارد تو عکس دیده نمی‌شه.</p>
+  </div>
+  <p class="ver" style="margin-top:auto;padding-top:20px">نسخه نمایشی 0.7</p>
+</aside>
+
+<nav class="dock" id="dock" hidden aria-label="سرویس‌ها">
+  <button data-tab="wg"><svg viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 5-3 8-7 10-4-2-7-5-7-10V6z"/><path d="M9.5 12l2 2 3-3.5"/></svg>وایرگارد</button>
+  <button data-tab="dns"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="8"/><path d="M12 4V2M12 22v-2M4 12H2M22 12h-2"/></svg>DNS</button>
+</nav>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<div class="modal" id="modal" hidden role="dialog" aria-modal="true" aria-labelledby="mTitle" dir="rtl"><div class="mcard"><h3 id="mTitle"></h3><div id="mBody"></div><div class="mact"><button class="btn primary" id="mOk">تأیید</button><button class="btn" id="mCancel">لغو</button></div></div></div>
+
+<script>
+(function(){
+  document.documentElement.setAttribute('dir','rtl');
+  var $=function(s){return document.querySelector(s)};
+  var $$=function(s){return Array.prototype.slice.call(document.querySelectorAll(s))};
+  var esc=function(t){return String(t).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})};
+
+  var DNS=[
+    {id:'cloudflare',name:'Cloudflare',p:'1.1.1.1',s:'1.0.0.1',p6:'2606:4700:4700::1111',s6:'2606:4700:4700::1001',cat:['speed','gaming'],c:['#f6821f','#fbbf24']},
+    {id:'google',name:'Google',p:'8.8.8.8',s:'8.8.4.4',p6:'2001:4860:4860::8888',s6:'2001:4860:4860::8844',cat:['speed','gaming'],c:['#4285f4','#22b8cf']},
+    {id:'quad9',name:'Quad9',p:'9.9.9.9',s:'149.112.112.112',p6:'2620:fe::fe',s6:'2620:fe::9',cat:['security'],c:['#e11d48','#fb7185']},
+    {id:'opendns',name:'OpenDNS',p:'208.67.222.222',s:'208.67.220.220',p6:'2620:119:35::35',s6:'2620:119:53::53',cat:['security'],c:['#ea580c','#f59e0b']},
+    {id:'adguard',name:'AdGuard',p:'94.140.14.14',s:'94.140.15.15',p6:'2a10:50c0::ad1:ff',s6:'2a10:50c0::ad2:ff',cat:['ads','security'],c:['#16a34a','#4ade80']},
+    {id:'cleanb',name:'CleanBrowsing',p:'185.228.168.9',s:'185.228.169.9',p6:'2a0d:2a00:1::2',s6:'2a0d:2a00:2::2',cat:['security'],c:['#0ea5e9','#6366f1']}
+  ];
+  var CATS=[['all','همه'],['fav','علاقه‌مندی'],['speed','سرعت'],['security','امنیت'],['ads','بلاک تبلیغ'],['gaming','گیمینگ']];
+  var LABEL={speed:'سرعت',security:'امنیت',ads:'بلاک تبلیغ',gaming:'گیمینگ',custom:'دلخواه'};
+
+  var S={f:{p4:'',s4:'',v6:false,p6:'',s6:''},favs:['cloudflare','google'],custom:[],conn:'off',t0:0,cat:'all',q:''};
+  var KEY='dnschanger-demo2';
+  try{var raw=localStorage.getItem(KEY);if(raw){var o=JSON.parse(raw);if(o.f)S.f=Object.assign(S.f,o.f);if(o.favs)S.favs=o.favs;if(o.custom)S.custom=o.custom}}catch(e){}
+  function save(){try{localStorage.setItem(KEY,JSON.stringify({f:S.f,favs:S.favs,custom:S.custom}))}catch(e){}}
+
+  function all(){return DNS.concat(S.custom)}
+  function letter(d){var m=/[A-Za-z0-9]/.exec(d.name);return m?m[0].toUpperCase():d.name.charAt(0)}
+  function avatar(d){var c=d.c||['#7c5cff','#22d3ee'];return '<span class="av" style="background:linear-gradient(135deg,'+c[0]+','+c[1]+')">'+esc(letter(d))+'</span>'}
+
+  function okIp4(v){var m=/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/.exec(v);return !!m&&m.slice(1).every(function(o){return +o<=255})}
+  function okIp6(v){
+    if(!/^[0-9a-fA-F:]+$/.test(v)||v.indexOf(':')<0)return false;
+    var dbl=v.split('::');if(dbl.length>2)return false;
+    var seg=function(t){return t===''?[]:t.split(':')};
+    var a=seg(dbl[0]),b=dbl.length===2?seg(dbl[1]):[];
+    var g=a.concat(b);
+    if(!g.every(function(x){return /^[0-9a-fA-F]{1,4}$/.test(x)}))return false;
+    return dbl.length===2?g.length<=7:g.length===8;
+  }
+
+  var toastT;
+  function toast(t){var el=$('#toast');el.textContent=t;el.classList.add('show');clearTimeout(toastT);toastT=setTimeout(function(){el.classList.remove('show')},1900)}
+
+  /* navigation */
+  function go(name){
+    ['home','list','settings','about'].forEach(function(n){$('#s-'+n).hidden=(n!==name)});
+    $$('.drawer button[data-go]').forEach(function(b){if(b.dataset.go===name)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current')});
+    closeDrawer(true);S.page=name;renderDock();window.scrollTo(0,0);stagger(name);
+  }
+  document.addEventListener('click',function(e){var b=e.target.closest('[data-go]');if(b)go(b.dataset.go)});
+
+  /* fields */
+  var FIELDS=[['p4','inP4','fP4','msgP4'],['s4','inS4','fS4','msgS4'],['p6','inP6','fP6','msgP6'],['s6','inS6','fS6','msgS6']];
+  function setFields(v){
+    S.f.p4=v.p||'';S.f.s4=v.s||'';S.f.p6=v.p6||'';S.f.s6=v.s6||'';S.f.v6=!!(v.p6||v.s6);
+    syncInputs();save();clearErrors();renderHome();
+  }
+  function syncInputs(){
+    $('#inP4').value=S.f.p4;$('#inS4').value=S.f.s4;$('#inP6').value=S.f.p6;$('#inS6').value=S.f.s6;
+    $('#sw6').setAttribute('aria-checked',String(S.f.v6));$('#v6box').hidden=!S.f.v6;
+  }
+  function clearErrors(){FIELDS.forEach(function(x){$('#'+x[2]).classList.remove('bad');$('#'+x[3]).textContent='';$('#'+x[3]).className='msg'})}
+  function mark(i,text){var x=FIELDS[i];$('#'+x[2]).classList.remove('bad');void $('#'+x[2]).offsetWidth;$('#'+x[2]).classList.add('bad');$('#'+x[3]).className='msg';$('#'+x[3]).textContent=text}
+  function refreshV6Hint(){
+    var m=$('#msgP6');if($('#fP6').classList.contains('bad'))return;
+    if(S.f.v6&&!S.f.p6.trim()){m.className='msg warn';m.textContent='کادر اول نسل ۶ نباید خالی باشه.'}
+    else if(m.classList.contains('warn')){m.className='msg';m.textContent=''}
+  }
+  function validate(){
+    clearErrors();var first=-1;
+    function bad(i,t){mark(i,t);if(first<0)first=i}
+    if(!S.f.p4.trim())bad(0,'DNS اصلی IPv4 رو وارد کن. این کادر اجباریه.');
+    else if(!okIp4(S.f.p4.trim()))bad(0,'آدرس IPv4 معتبر نیست. مثلاً 8.8.8.8');
+    if(S.f.s4.trim()&&!okIp4(S.f.s4.trim()))bad(1,'آدرس معتبر نیست. این کادر رو می‌تونی خالی بذاری.');
+    if(S.f.v6){
+      if(!S.f.p6.trim())bad(2,'IPv6 روشنه، پس کادر اول نسل ۶ نباید خالی باشه. آدرس رو وارد کن یا IPv6 رو خاموش کن.');
+      else if(!okIp6(S.f.p6.trim()))bad(2,'آدرس IPv6 معتبر نیست. مثلاً 2001:4860:4860::8888');
+      if(S.f.s6.trim()&&!okIp6(S.f.s6.trim()))bad(3,'آدرس IPv6 معتبر نیست. این کادر رو می‌تونی خالی بذاری.');
+    }
+    if(first>=0){badInfo={tab:'dns',fld:FIELDS[first][2],inp:FIELDS[first][1]};return false}
+    return true;
+  }
+  function showBad(info){
+    if(!info)return;
+    if(info.tab!==curTab()){S.tab=info.tab;renderHome()}
+    var el=$('#'+info.fld);if(!el)return;
+    el.scrollIntoView({block:'center',behavior:'smooth'});
+    setTimeout(function(){var i=$('#'+info.inp);if(i)i.focus({preventScroll:true})},380);
+  }
+  FIELDS.forEach(function(x,i){
+    $('#'+x[1]).addEventListener('input',function(e){
+      S.f[x[0]]=e.target.value;save();
+      $('#'+x[2]).classList.remove('bad');$('#'+x[3]).textContent='';$('#'+x[3]).className='msg';
+      renderHome();renderList();
+    });
+  });
+  $('#sw6').addEventListener('click',function(){
+    if(S.conn!=='off')return;
+    S.f.v6=!S.f.v6;save();syncInputs();
+    if(!S.f.v6){['#fP6','#fS6'].forEach(function(s){$(s).classList.remove('bad')});$('#msgP6').textContent='';$('#msgP6').className='msg';$('#msgS6').textContent=''}
+    else{$('#inP6').focus()}
+    refreshV6Hint();
+  });
+  $('#clearBtn').addEventListener('click',function(){if(S.conn!=='off'){toast('اول اتصال رو قطع کن');return}setFields({});toast('فیلدها پاک شد')});
+
+  function matchItem(){
+    var p=S.f.p4.trim(),s=S.f.s4.trim();if(!p)return null;
+    var l=all().filter(function(d){return d.p===p&&(d.s||'')===s});return l[0]||null;
+  }
+
+  /* home */
+  var timer=null,connT=[],badInfo=null;
+  S.step=0;S.tab='dns';S.page='home';S.act=null;S.sig='';
+  function fmt(s){var h=Math.floor(s/3600),m=Math.floor(s%3600/60),x=s%60;return [h,m,x].map(function(n){return String(n).padStart(2,'0')}).join(':')}
+
+  /* wireguard model: keys are never stored in this demo */
+  var WK='dnschanger-wg';
+  var WDEF={name:'',priv:'',addr:'',dns:'',mtu:'',pub:'',end:'',allowed:'0.0.0.0/0, ::/0',psk:'',keep:''};
+  var W=Object.assign({},WDEF);
+  try{var rw=localStorage.getItem(WK);if(rw){var ow=JSON.parse(rw);['name','addr','dns','mtu','pub','end','allowed','keep'].forEach(function(k){if(typeof ow[k]==='string')W[k]=ow[k]})}}catch(e){}
+  function saveW(){try{localStorage.setItem(WK,JSON.stringify({name:W.name,addr:W.addr,dns:W.dns,mtu:W.mtu,pub:W.pub,end:W.end,allowed:W.allowed,keep:W.keep}))}catch(e){}}
+  var KEYSVG='<svg viewBox="0 0 24 24"><circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M16 7l3 3M14 9l2 2"/></svg>';
+  var GLOBESVG='<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.8 3 2.8 15 0 18M12 3c-2.8 3-2.8 15 0 18"/></svg>';
+  var WGF=[
+    {k:'name',t:'اسم تونل',en:'',req:false,ph:'مثلاً سرور آلمان',plain:true},
+    {k:'priv',g:'سمت گوشی (Interface)',t:'کلید خصوصی',en:'PrivateKey',req:true,ph:'44 کاراکتر base64',sec:true},
+    {k:'addr',t:'آی‌پی تو داخل تونل',en:'Address',req:true,ph:'10.0.0.2/32'},
+    {k:'dns',t:'DNS تونل',en:'DNS',req:false,ph:'1.1.1.1, 8.8.8.8'},
+    {k:'mtu',t:'MTU',en:'MTU',req:false,ph:'1420'},
+    {k:'pub',g:'سمت سرور (Peer)',t:'کلید عمومی سرور',en:'PublicKey',req:true,ph:'44 کاراکتر base64'},
+    {k:'end',t:'آدرس سرور',en:'Endpoint',req:true,ph:'1.2.3.4:51820'},
+    {k:'allowed',t:'ترافیک عبوری',en:'AllowedIPs',req:true,ph:'0.0.0.0/0, ::/0'},
+    {k:'psk',t:'کلید اشتراکی',en:'PresharedKey',req:false,ph:'44 کاراکتر base64',sec:true},
+    {k:'keep',t:'زنده نگه داشتن',en:'PersistentKeepalive',req:false,ph:'25'}
+  ];
+  function buildWg(){
+    var h='';
+    WGF.forEach(function(f){
+      if(f.g)h+='<div class="gh" style="margin:14px 0 2px">'+f.g+'</div>';
+      h+='<div><div class="fld" id="wf_'+f.k+'"><span class="gi">'+(f.sec?KEYSVG:GLOBESVG)+'</span><label for="wg_'+f.k+'"><b>'+f.t+'</b><em>'+(f.en?f.en+' · ':'')+(f.req?'اجباری':'اختیاری')+'</em></label>'+
+        '<input id="wg_'+f.k+'" class="'+(f.plain?'':'mono')+'" type="'+(f.sec?'password':'text')+'" placeholder="'+f.ph+'" autocomplete="'+(f.sec?'new-password':'off')+'" spellcheck="false" autocapitalize="off"'+(f.plain?' style="direction:rtl;text-align:right"':'')+'>'+
+        (f.sec?'<button type="button" class="eye" data-eye="'+f.k+'">نمایش</button>':'')+'</div><p class="msg" id="wm_'+f.k+'" role="alert"></p></div>';
+    });
+    $('#wgFields').innerHTML=h;
+    WGF.forEach(function(f){
+      var inp=$('#wg_'+f.k);inp.value=W[f.k]||'';
+      inp.addEventListener('input',function(e){W[f.k]=e.target.value;saveW();clearW(f.k);renderHome()});
+    });
+    $$('[data-eye]').forEach(function(b){b.addEventListener('click',function(){var i=$('#wg_'+b.dataset.eye);var show=i.type==='password';i.type=show?'text':'password';b.textContent=show?'پنهان':'نمایش'})});
+  }
+  function syncWg(){WGF.forEach(function(f){$('#wg_'+f.k).value=W[f.k]||''})}
+  function clearW(k){var f=$('#wf_'+k);if(f)f.classList.remove('bad');var m=$('#wm_'+k);if(m)m.textContent=''}
+  function markW(k,text){var f=$('#wf_'+k);f.classList.remove('bad');void f.offsetWidth;f.classList.add('bad');$('#wm_'+k).textContent=text}
+  var RE_KEY=/^[A-Za-z0-9+\/]{43}=$/;
+  function okCidr(v){var m=/^(.+)\/(\d{1,3})$/.exec(v.trim());if(!m)return false;var n=+m[2],a=m[1];if(okIp4(a))return n<=32;if(okIp6(a))return n<=128;return false}
+  function okList(v,fn){var p=v.split(',').map(function(x){return x.trim()});return p.length>0&&p.every(function(x){return x&&fn(x)})}
+  function okEndpoint(v){
+    var m=/^\[([0-9a-fA-F:]+)\]:(\d{1,5})$/.exec(v);
+    if(m)return okIp6(m[1])&&+m[2]>=1&&+m[2]<=65535;
+    m=/^([^:\s]+):(\d{1,5})$/.exec(v);if(!m)return false;
+    var port=+m[2];if(port<1||port>65535)return false;
+    var h=m[1];if(/^[\d.]+$/.test(h))return okIp4(h);
+    return h.length<=253&&/^[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?(\.[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?)*$/.test(h);
+  }
+  function validateWg(){
+    var first=null;
+    WGF.forEach(function(f){clearW(f.k)});
+    function bad(k,t){markW(k,t);if(!first)first=k}
+    var v=function(k){return (W[k]||'').trim()};
+    if(!v('priv'))bad('priv','کلید خصوصی اجباریه.');
+    else if(!RE_KEY.test(v('priv')))bad('priv','کلید خصوصی معتبر نیست. باید ۴۴ کاراکتر باشه و آخرش = داشته باشه.');
+    if(!v('addr'))bad('addr','آی‌پی داخل تونل اجباریه. مثلاً 10.0.0.2/32');
+    else if(!okList(v('addr'),okCidr))bad('addr','آدرس معتبر نیست. مثلاً 10.0.0.2/32');
+    if(v('dns')&&!okList(v('dns'),function(x){return okIp4(x)||okIp6(x)}))bad('dns','DNS معتبر نیست. این کادر رو می‌تونی خالی بذاری.');
+    if(v('mtu')&&!(/^\d{3,4}$/.test(v('mtu'))&&+v('mtu')>=576&&+v('mtu')<=1500))bad('mtu','MTU باید عددی بین ۵۷۶ و ۱۵۰۰ باشه. می‌تونی خالی بذاری.');
+    if(!v('pub'))bad('pub','کلید عمومی سرور اجباریه.');
+    else if(!RE_KEY.test(v('pub')))bad('pub','کلید عمومی معتبر نیست. باید ۴۴ کاراکتر باشه و آخرش = داشته باشه.');
+    if(!v('end'))bad('end','آدرس سرور اجباریه. مثلاً 1.2.3.4:51820');
+    else if(!okEndpoint(v('end')))bad('end','آدرس سرور معتبر نیست. مثلاً 1.2.3.4:51820');
+    if(!v('allowed'))bad('allowed','این کادر اجباریه. برای عبور کل ترافیک بنویس 0.0.0.0/0, ::/0');
+    else if(!okList(v('allowed'),okCidr))bad('allowed','آدرس معتبر نیست. مثلاً 0.0.0.0/0, ::/0');
+    if(v('psk')&&!RE_KEY.test(v('psk')))bad('psk','کلید اشتراکی معتبر نیست. می‌تونی خالی بذاری.');
+    if(v('keep')&&!(/^\d{1,5}$/.test(v('keep'))&&+v('keep')<=65535))bad('keep','عدد معتبر نیست. می‌تونی خالی بذاری.');
+    if(first){badInfo={tab:'wg',fld:'wf_'+first,inp:'wg_'+first};return false}
+    return true;
+  }
+  function parseWg(text){
+    var sec='',o={},amn=false,n=0;
+    var MAP={interface:{privatekey:'priv',address:'addr',dns:'dns',mtu:'mtu'},peer:{publickey:'pub',endpoint:'end',allowedips:'allowed',presharedkey:'psk',persistentkeepalive:'keep'}};
+    var AM=/^(jc|jmin|jmax|s1|s2|s3|s4|h1|h2|h3|h4|i1|i2|i3|i4|i5)$/;
+    text.split(/\r?\n/).forEach(function(line){
+      line=line.replace(/[#;].*$/,'').trim();if(!line)return;
+      var m=/^\[(\w+)\]$/.exec(line);if(m){sec=m[1].toLowerCase();return}
+      var i=line.indexOf('=');if(i<0)return;
+      var k=line.slice(0,i).trim().toLowerCase(),v=line.slice(i+1).trim();
+      if(AM.test(k)){amn=true;return}
+      var t=MAP[sec]&&MAP[sec][k];if(!t)return;
+      o[t]=o[t]?o[t]+', '+v:v;n++;
+    });
+    return {o:o,n:n,amn:amn};
+  }
+  function applyWgText(text){
+    var r=parseWg(text);
+    if(!r.n){toast('کانفیگ معتبری پیدا نشد');return false}
+    var keep=W.name;Object.assign(W,WDEF);W.name=keep;
+    Object.keys(r.o).forEach(function(k){W[k]=r.o[k]});
+    syncWg();WGF.forEach(function(f){clearW(f.k)});saveW();renderHome();
+    toast('کانفیگ وارد شد'+(r.amn?'. پارامترهای Amnezia پشتیبانی نمی‌شن':''));
+    return true;
+  }
+
+  /* services and path */
+  function curTab(){return ST.v.wg?S.tab:'dns'}
+  function services(){
+    if(S.conn!=='off'&&S.act)return S.act;
+    if(!ST.v.wg)return ['dns'];
+    return ST.both?['wg','dns']:[S.tab];
+  }
+  var ICON={
+    app:'<svg viewBox="0 0 24 24"><path d="M3 12h3.5l2-5.5 3.5 11 2.5-7.5 1 2H21"/></svg>',
+    dns:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="8"/><path d="M12 4V2M12 22v-2M4 12H2M22 12h-2"/></svg>',
+    wg:'<svg viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 5-3 8-7 10-4-2-7-5-7-10V6z"/><path d="M9.5 12l2 2 3-3.5"/></svg>',
+    net:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.8 3 2.8 15 0 18M12 3c-2.8 3-2.8 15 0 18"/></svg>'
+  };
+  function dnsLabel(){var m=matchItem(),p=S.f.p4.trim();return m?m.name:(p&&okIp4(p)?p:'DNS شما')}
+  function wgLabel(){var n=W.name.trim();if(n)return n;var e=W.end.trim();if(e)return e.replace(/:\d+$/,'').replace(/^\[|\]$/g,'');return 'وایرگارد'}
+  function renderPath(){
+    var svc=services(),sig=svc.join('+'),p=$('#path');
+    if(sig!==S.sig){
+      S.sig=sig;
+      var nodes=[['app','اپلیکیشن DNS']].concat(svc.map(function(x){return [x,'']})).concat([['net','اینترنت']]);
+      var h='';
+      nodes.forEach(function(n,i){
+        if(i>0)h+='<i class="wire w'+i+'"></i>';
+        h+='<div class="node n'+(i+1)+'" data-k="'+n[0]+'"><span class="nbox">'+ICON[n[0]]+'</span><small>'+n[1]+'</small></div>';
+      });
+      p.innerHTML=h;p.className='path k'+nodes.length;S.step=0;
+    }
+    $$('#path .node').forEach(function(nd){
+      var k=nd.dataset.k,sm=nd.querySelector('small');
+      if(k==='dns')sm.textContent=dnsLabel();else if(k==='wg')sm.textContent=wgLabel();
+    });
+    $('#pathMsg').textContent=pathText();
+  }
+  function pathText(){
+    var svc=services(),K=svc.length+2,s=S.step;
+    if(s===0)return 'با لمس دکمه، مسیر اتصال تا اینترنت نمایش داده می‌شه.';
+    if(s===1)return 'اپلیکیشن DNS چنجر شروع شد.';
+    if(s>=K+1)return 'به اینترنت رسیدی و '+(svc.length===2?'وایرگارد و DNS':(svc[0]==='wg'?'وایرگارد':'DNS'))+' فعاله.';
+    if(s===K)return 'در حال رسیدن به اینترنت...';
+    return svc[s-2]==='wg'?'تونل وایرگارد به '+wgLabel()+' برقرار می‌شه.':'درخواست‌ها به '+dnsLabel()+' می‌رن.';
+  }
+  function setStep(n){
+    var K=services().length+2,p=$('#path');S.step=n;
+    if(n<=K)p.classList.add('a'+n);else p.classList.add('on');
+  }
+  function resetPath(){connT.forEach(clearTimeout);connT=[];S.step=0;var p=$('#path');['a1','a2','a3','a4','a5','on'].forEach(function(c){p.classList.remove(c)})}
+  function subText(){
+    var svc=services(),both=svc.length===2,d=dnsLabel(),w=svc[0]==='wg';
+    if(S.conn==='off')return both?'DNS و کانفیگ وایرگارد رو آماده کن و دکمه رو لمس کن':(w?'کانفیگ وایرگارد رو وارد کن و دکمه رو لمس کن':'DNS رو وارد کن و دکمه رو لمس کن');
+    if(S.conn==='connecting')return both?'مجوز VPN، تونل وایرگارد و DNS':(w?'مجوز VPN و تونل وایرگارد':'مجوز VPN و تنظیم DNS');
+    return both?'وایرگارد وصل شد و DNS روی '+d+' تنظیم شده':(w?'تونل وایرگارد برقراره':'DNS روی '+d+' تنظیم شده');
+  }
+
+  /* dock and tabs */
+  function renderDock(){
+    var show=!!ST.v.wg&&S.page==='home';
+    $('#dock').hidden=!show;document.body.classList.toggle('hasdock',show);
+    $('#dock').dataset.tab=curTab();$$('#dock button').forEach(function(b){if(b.dataset.tab===curTab())b.setAttribute('aria-current','page');else b.removeAttribute('aria-current')});
+  }
+  $('#dock').addEventListener('click',function(e){var b=e.target.closest('[data-tab]');if(!b)return;S.tab=b.dataset.tab;renderHome();window.scrollTo(0,0)});
+  $('#swBoth').addEventListener('click',function(){
+    if(S.conn!=='off'){toast('اول اتصال رو قطع کن');return}
+    if(ST.both){ST.both=false;saveSet();renderHome();return}
+    openModal('هشدار','<p>این حالت به شرایط اینترنت بستگی داره. ممکنه بعد از فعال‌سازی و استفاده، اینترنت شما دچار اختلال بشه، یعنی پینگ بالا بره. به هر حال می‌تونید تست کنید.</p>','متوجه شدم، فعال کن',function(){ST.both=true;saveSet();renderHome();toast('استفاده همزمان فعال شد')});
+  });
+
+  /* wireguard actions */
+  $('#wgPasteBtn').addEventListener('click',function(){
+    if(S.conn!=='off'){toast('اول اتصال رو قطع کن');return}
+    openModal('چسباندن کانفیگ','<p>متن کانفیگ WireGuard رو اینجا بچسبون.</p><textarea id="wgPaste" class="ta mono" spellcheck="false" autocomplete="off" placeholder="[Interface]"></textarea><p class="err" id="mErr" role="alert"></p>','وارد کن',function(){
+      var t=$('#wgPaste').value;
+      if(!t.trim()){$('#mErr').textContent='متن کانفیگ رو بچسبون.';return false}
+      if(!applyWgText(t)){$('#mErr').textContent='کانفیگ معتبری پیدا نشد. بخش‌های [Interface] و [Peer] لازمه.';return false}
+    });
+  });
+  $('#wgFileBtn').addEventListener('click',function(){if(S.conn!=='off'){toast('اول اتصال رو قطع کن');return}$('#wgFile').click()});
+  $('#wgFile').addEventListener('change',function(e){
+    var f=e.target.files&&e.target.files[0];if(!f)return;
+    if(f.size>200000){toast('فایل خیلی بزرگه');e.target.value='';return}
+    var r=new FileReader();r.onload=function(){applyWgText(String(r.result||''))};r.onerror=function(){toast('فایل خونده نشد')};r.readAsText(f);e.target.value='';
+  });
+  $('#wgClear').addEventListener('click',function(){
+    if(S.conn!=='off'){toast('اول اتصال رو قطع کن');return}
+    Object.assign(W,WDEF);syncWg();WGF.forEach(function(f){clearW(f.k)});saveW();renderHome();toast('فیلدها پاک شد');
+  });
+
+  function renderHome(){
+    var tab=curTab();
+    $('#ringbox').dataset.s=S.conn;$('#chip').dataset.s=S.conn;$('#state').dataset.s=S.conn;
+    $('#chipText').textContent={off:'قطع',connecting:'در حال اتصال',on:'متصل'}[S.conn];
+    $('#stTitle').textContent={off:'قطع است',connecting:'در حال اتصال...',on:'متصل شد'}[S.conn];
+    $('#stSub').textContent=subText();
+    if(S.conn!=='on')$('#hTime').textContent='00:00:00';
+    renderPath();
+    $('#bothRow').hidden=!ST.v.wg;
+    $('#swBoth').setAttribute('aria-checked',String(!!ST.both));
+    $('#dnsPane').hidden=tab!=='dns';$('#wgPane').hidden=tab!=='wg';
+    refreshV6Hint();
+    var lock=S.conn!=='off';
+    FIELDS.forEach(function(x){$('#'+x[1]).disabled=lock;$('#'+x[2]).classList.toggle('lock',lock)});
+    WGF.forEach(function(f){var i=$('#wg_'+f.k);if(i)i.disabled=lock;var w=$('#wf_'+f.k);if(w)w.classList.toggle('lock',lock)});
+    renderDock();
+  }
+  function startTimer(){stopTimer();timer=setInterval(function(){$('#hTime').textContent=fmt(Math.floor((Date.now()-S.t0)/1000))},1000)}
+  function stopTimer(){if(timer){clearInterval(timer);timer=null}}
+  $('#power').addEventListener('click',function(){
+    if(S.conn==='connecting')return;
+    if(S.conn==='on'){S.conn='off';stopTimer();resetPath();S.act=null;renderHome();toast('اتصال قطع شد');return}
+    var svc=services(),r={dns:null,wg:null};
+    if(svc.indexOf('dns')>=0){badInfo=null;if(!validate())r.dns=badInfo}
+    if(svc.indexOf('wg')>=0){badInfo=null;if(!validateWg())r.wg=badInfo}
+    if(r.dns||r.wg){showBad(r[curTab()]||r.dns||r.wg);toast('اول کادر قرمز رو درست پر کن');return}
+    S.act=svc.slice();S.conn='connecting';
+    var K=svc.length+2;
+    resetPath();setStep(1);renderHome();
+    for(var n=2;n<=K;n++){(function(st){connT.push(setTimeout(function(){setStep(st);renderHome()},700+(st-2)*900))})(n)}
+    connT.push(setTimeout(function(){setStep(K+1);S.conn='on';S.t0=Date.now();startTimer();renderHome();toast('متصل شد')},700+(K-1)*900));
+  });
+
+  /* add service */
+  $('#addBtn').addEventListener('click',function(){
+    if(!validate()){showBad(badInfo);toast('اول کادر قرمز رو درست پر کن');return}
+    var f=S.f,v6=f.v6&&(f.p6.trim()||f.s6.trim());
+    var sum='<div class="sum mono"><span>IPv4: '+esc(f.p4.trim())+(f.s4.trim()?' / '+esc(f.s4.trim()):'')+'</span>'+(v6?'<span>IPv6: '+esc([f.p6.trim(),f.s6.trim()].filter(Boolean).join(' / '))+'</span>':'')+'</div>';
+    openModal('افزودن سرویس DNS','<p>'+(v6?'این سرویس با IPv4 و IPv6 ذخیره می‌شه.':'این سرویس فقط با IPv4 ذخیره می‌شه.')+'</p>'+sum+'<label class="fplain">اسم سرویس<input id="svcName" maxlength="24" placeholder="مثلاً DNS خودم" autocomplete="off"></label><p class="err" id="mErr" role="alert"></p>','افزودن',function(){
+      var n=$('#svcName').value.trim();
+      if(!n){$('#mErr').textContent='یه اسم برای سرویس بنویس.';return false}
+      S.custom.push({id:'c'+Date.now(),name:n,p:f.p4.trim(),s:f.s4.trim(),p6:v6?f.p6.trim():'',s6:v6?f.s6.trim():'',cat:['custom'],custom:true});
+      save();renderList();renderHome();toast('به لیست اضافه شد');
+    });
+  });
+  $('#goAdd').addEventListener('click',function(){S.tab='dns';go('home');renderHome();var b=$('#addBtn');b.scrollIntoView({block:'center'});$('#inP4').focus({preventScroll:true})});
+
+  /* list */
+  function renderChips(){
+    $('#chips').innerHTML=CATS.map(function(c){return '<button class="fchip" data-c="'+c[0]+'" aria-pressed="'+(S.cat===c[0])+'">'+c[1]+'</button>'}).join('');
+  }
+  function renderList(){
+    var q=S.q.trim().toLowerCase(),m=matchItem();
+    var items=all().filter(function(d){
+      if(S.cat==='fav'&&S.favs.indexOf(d.id)<0)return false;
+      if(S.cat!=='all'&&S.cat!=='fav'&&d.cat.indexOf(S.cat)<0)return false;
+      if(q&&(d.name.toLowerCase().indexOf(q)<0&&d.p.indexOf(q)<0&&(d.s||'').indexOf(q)<0))return false;
+      return true;
+    });
+    if(!items.length){
+      $('#list').innerHTML='<div class="empty">'+(S.cat==='fav'?'هنوز DNSی رو با ستاره علامت نزدی.':'موردی پیدا نشد.')+'</div>';return;
+    }
+    $('#list').innerHTML=items.map(function(d){
+      var fav=S.favs.indexOf(d.id)>=0,sel=!!m&&m.id===d.id,has6=!!(d.p6||d.s6);
+      return '<div class="item" data-sel="'+(sel?1:0)+'">'+avatar(d)+
+        '<div style="min-width:0"><div class="nm">'+esc(d.name)+'</div>'+
+        '<span class="ips mono">'+esc(d.p)+'</span>'+(d.s?'<span class="ips mono">'+esc(d.s)+'</span>':'')+
+        '<div class="tags">'+d.cat.slice(0,2).map(function(c){return '<span class="tag">'+LABEL[c]+'</span>'}).join('')+'<span class="tag'+(has6?' v6':'')+'">'+(has6?'IPv4 + IPv6':'فقط IPv4')+'</span></div></div>'+
+        '<div class="acts"><button class="star" data-fav="'+esc(d.id)+'" aria-pressed="'+fav+'" aria-label="علاقه‌مندی"><svg viewBox="0 0 24 24"><path d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.9L12 17l-5.2 2.7 1-5.9-4.3-4.1 5.9-.8z"/></svg></button>'+
+        '<button class="btn sm'+(sel?' primary':'')+'" data-pick="'+esc(d.id)+'">'+(sel?'انتخاب‌شده':'انتخاب')+'</button>'+
+        (d.custom?'<button class="del" data-del="'+esc(d.id)+'">حذف</button>':'')+'</div></div>';
+    }).join('');
+  }
+  $('#chips').addEventListener('click',function(e){var b=e.target.closest('[data-c]');if(!b)return;S.cat=b.dataset.c;renderChips();renderList()});
+  $('#q').addEventListener('input',function(e){S.q=e.target.value;renderList()});
+  $('#list').addEventListener('click',function(e){
+    var f=e.target.closest('[data-fav]'),p=e.target.closest('[data-pick]'),x=e.target.closest('[data-del]');
+    if(f){var id=f.dataset.fav,i=S.favs.indexOf(id);if(i>=0)S.favs.splice(i,1);else S.favs.push(id);save();renderList()}
+    if(p){
+      if(S.conn!=='off'){toast('برای تغییر DNS اول اتصال رو قطع کن');return}
+      var d=all().filter(function(z){return z.id===p.dataset.pick})[0];
+      if(d){setFields(d);renderList();S.tab='dns';go('home');renderHome();toast(d.name+' تو فیلدها وارد شد')}
+    }
+    if(x){var did=x.dataset.del;S.custom=S.custom.filter(function(d){return d.id!==did});S.favs=S.favs.filter(function(i){return i!==did});save();renderList();renderHome();toast('حذف شد')}
+  });
+
+  /* settings */
+  var SK='dnschanger-set';
+  var ST={v:{notif:true,showDns:true,ipv4:true,ipv6:true,crash:true},pinSet:false,excl:[],timeout:1500,both:false};
+  try{var r2=localStorage.getItem(SK);if(r2){var o2=JSON.parse(r2);ST.v=Object.assign(ST.v,o2.v||{});ST.pinSet=!!o2.pinSet;ST.excl=o2.excl||[];ST.both=!!o2.both;if(o2.timeout)ST.timeout=o2.timeout}}catch(e){}
+  function saveSet(){try{localStorage.setItem(SK,JSON.stringify(ST))}catch(e){}}
+  var APPS=[['pubg','PUBG Mobile'],['insta','Instagram'],['tg','Telegram'],['yt','YouTube'],['chrome','Chrome'],['cod','Call of Duty']];
+  var GROUPS=[
+    {t:"اعلان‌ها",items:[
+      {k:"notif",lock:true,n:"نمایش اعلان",d:"وقتی اپ فعاله یه اعلان نشون می‌ده. تو اندروید ۸ به بالا خاموش نمی‌شه."},
+      {k:"hideIcon",n:"مخفی کردن آیکون اعلان",d:"آیکون اپ تو نوار وضعیت دیده نمی‌شه. روی بعضی نسخه‌های اندروید کار نمی‌کنه."},
+      {k:"showDns",n:"نمایش DNSها تو اعلان",d:"آدرس DNSهای فعال تو اعلان نوشته می‌شه."},
+      {k:"notifyStop",n:"اعلان توقف",d:"اگه اپ خودش متوقف شد، دلیلش رو اعلان می‌کنه."}
+    ]},
+    {t:"اتصال خودکار",items:[
+      {k:"boot",n:"شروع بعد از روشن شدن گوشی",d:"اپ بعد از ریستارت خودش وصل می‌شه."},
+      {k:"wifi",n:"شروع خودکار با وای‌فای",d:"وقتی به وای‌فای وصل شدی، اپ فعال می‌شه."},
+      {k:"mobile",n:"شروع خودکار با دیتا",d:"وقتی روی دیتای موبایل هستی، اپ فعال می‌شه."},
+      {k:"netchange",n:"قطع شدن با تغییر شبکه",d:"موقع عوض شدن شبکه (مثلاً وای‌فای به 3G) اپ قطع می‌شه و طبق تنظیمات بالا دوباره فعال می‌شه."},
+      {k:"priv",n:"حالت دسترسی بالا",d:"اتوماسیون با دسترسی بیشتر اجرا می‌شه و پایدارتره."},
+      {k:"afterUpdate",n:"فعال‌سازی بعد از آپدیت اپ",d:"بعد از آپدیت، اپ خودش دوباره فعال می‌شه. اگه مدت زیادی غیرفعال بوده ممکنه کار نکنه."}
+    ]},
+    {t:"قفل پین",items:[
+      {k:"pin",n:"پین",d:"ورود و کنترل اپ با پین ۴ رقمی."},
+      {k:"pinApp",dep:"pin",n:"محافظت از اپ",d:"موقع باز کردن اپ پین خواسته می‌شه."},
+      {k:"pinNotif",dep:"pin",n:"محافظت از اعلان",d:"برای توقف یا مکث از اعلان، پین لازمه."},
+      {k:"pinQs",dep:"pin",n:"محافظت از دکمه سریع",d:"برای وصل و قطع از Quick Settings پین لازمه."},
+      {k:"pinShort",dep:"pin",n:"محافظت از میان‌بُرها",d:"برای وصل و قطع از میان‌بُر برنامه پین لازمه."},
+      {k:"graceful",dep:"pin",n:"فقط توقف عادی",d:"اپ فقط با روش‌های خودش متوقف می‌شه."},
+      {act:"pin",b:"تغییر",dep:"pin",n:"تغییر پین",d:"پین جدید ۴ رقمی انتخاب کن."}
+    ]},
+    {t:"میان‌بُرها",items:[
+      {k:"reclick",n:"توقف با لمس دوباره میان‌بُر",d:"اگه دوباره روی میان‌بُری که اپ رو شروع کرده بزنی، اپ متوقف می‌شه."}
+    ]},
+    {t:"استثنای برنامه‌ها",items:[
+      {act:"excl",b:"انتخاب",n:"برنامه‌های مستثنی",d:"این برنامه‌ها از اتصال VPN اپ کنار گذاشته می‌شن و DNS روشون اعمال نمی‌شه."},
+      {k:"blacklist",n:"لیست سیاه",d:"روشن: برنامه‌های انتخاب‌شده DNS اپ رو نمی‌گیرن. خاموش: فقط همین برنامه‌ها DNS رو می‌گیرن."}
+    ]},
+    {t:"عمومی",items:[
+      {k:"admin",n:"مدیر دستگاه",d:"از حذف شدن اپ جلوگیری می‌کنه."},
+      {k:"ipv4",n:"فعال‌سازی IPv4",d:"اجازه می‌ده آدرس IPv4 به‌عنوان DNS استفاده بشه."},
+      {k:"ipv6",n:"فعال‌سازی IPv6",d:"اجازه می‌ده آدرس IPv6 به‌عنوان DNS استفاده بشه."},
+      {k:"shortcuts",n:"میان‌بُر برنامه",d:"با لمس طولانی آیکون اپ، منوی وصل و قطع باز می‌شه."}
+    ]},
+    {t:"عیب‌یابی",items:[
+      {k:"debug",n:"حالت دیباگ",d:"فایل لاگ برای ارسال به برنامه‌نویس ساخته می‌شه. مصرف باتری رو بالا می‌بره."},
+      {k:"crash",n:"گزارش خطا",d:"خطاها خودکار گزارش می‌شن. فقط نسخه اپ، نسخه اندروید و متن خطا ارسال می‌شه و اطلاعات شخصی نه."}
+    ]},
+    {t:"پیشرفته",items:[
+      {k:"adv",n:"تنظیمات پیشرفته",d:"موارد زیر فقط وقتی این گزینه روشنه کار می‌کنن."},
+      {k:"loopback",dep:"adv",n:"اجازه آدرس loopback",d:"وارد کردن آدرس‌هایی مثل 127.0.0.1 تو همه فیلدها."},
+      {k:"ports",dep:"adv",n:"پورت دلخواه",d:"وارد کردن پورت تو فیلدهای DNS."},
+      {k:"tcp",dep:"adv",n:"DNS روی TCP",d:"درخواست‌های DNS با TCP فرستاده می‌شن، نه UDP."},
+      {num:true,dep:"adv",n:"زمان انتظار TCP (میلی‌ثانیه)",d:"بعد از این مدت، اپ تلاش برای رسیدن به سرور DNS رو متوقف می‌کنه."},
+      {k:"qlog",dep:"adv",n:"ثبت درخواست‌ها",d:"همه درخواست‌های DNS وقتی اپ فعاله ثبت می‌شن."},
+      {k:"ulog",dep:"adv",n:"ثبت پاسخ سرور",d:"پاسخ سرور DNS هم ثبت می‌شه."},
+      {k:"wg",n:"وایرگارد (WireGuard)",d:"با روشن کردن، دو تب «وایرگارد» و «DNS» پایین صفحه خانه ظاهر می‌شه. اطلاعات کانفیگ تو همون تب وارد می‌شه، نه اینجا."}
+    ]}
+  ];
+  function rowHtml(it){
+    var dis=!!(it.dep&&!ST.v[it.dep]);
+    var d=it.d;
+    if(it.act==='excl')d+=' ('+ST.excl.length+' برنامه انتخاب شده)';
+    var head='<div class="srow" data-off="'+(dis?1:0)+'"><div style="min-width:0"><b>'+it.n+'</b><p>'+d+'</p></div>';
+    if(it.act)return head+'<button class="btn sm" data-act="'+it.act+'"'+(dis?' disabled':'')+'>'+it.b+'</button></div>';
+    if(it.num)return head+'<input class="numin mono" id="numTimeout" type="number" min="100" step="100" value="'+ST.timeout+'"'+(dis?' disabled':'')+' aria-label="'+it.n+'"></div>';
+    var on=it.lock?true:!!ST.v[it.k];
+    return head+'<button class="sw" role="switch" data-k="'+it.k+'" aria-checked="'+on+'" aria-label="'+it.n+'"'+((dis||it.lock)?' disabled':'')+'></button></div>';
+  }
+  function renderSet(){
+    $('#setBody').innerHTML=GROUPS.map(function(g){
+      return '<div class="gh">'+g.t+'</div><div class="card grp">'+g.items.map(rowHtml).join('')+'</div>';
+    }).join('');
+  }
+
+  /* sheet */
+  var mOk=null;
+  function openModal(title,body,okText,onOk,cancelText){
+    $('#mTitle').textContent=title;$('#mBody').innerHTML=body;
+    $('#mOk').textContent=okText||'تأیید';$('#mCancel').textContent=cancelText||'لغو';
+    mOk=onOk;$('#modal').hidden=false;
+    var f=$('#mBody input, #mBody textarea');if(f)f.focus();
+  }
+  function closeModal(){$('#modal').hidden=true;mOk=null}
+  $('#mOk').addEventListener('click',function(){if(mOk&&mOk()===false)return;closeModal()});
+  $('#mCancel').addEventListener('click',closeModal);
+  $('#modal').addEventListener('click',function(e){if(e.target.id==='modal')closeModal()});
+
+  function pinModal(){
+    openModal('پین ۴ رقمی','<label class="fplain">پین جدید<input id="pinIn" class="mono" inputmode="numeric" maxlength="4" autocomplete="off" placeholder="0000"></label><p class="err" id="mErr" role="alert"></p>','ذخیره',function(){
+      var v=$('#pinIn').value.trim();
+      if(!/^\d{4}$/.test(v)){$('#mErr').textContent='پین باید دقیقاً ۴ رقم باشه.';return false}
+      ST.pinSet=true;ST.v.pin=true;saveSet();renderSet();toast('پین تنظیم شد (نمایشی)');
+    });
+  }
+  function appsModal(){
+    var body='<p>برنامه‌های نمونه برای دیدن ظاهر این بخش:</p><div class="apps">'+APPS.map(function(a){
+      return '<label><input type="checkbox" value="'+a[0]+'"'+(ST.excl.indexOf(a[0])>=0?' checked':'')+'>'+a[1]+'</label>';
+    }).join('')+'</div>';
+    openModal('انتخاب برنامه‌ها',body,'ذخیره',function(){
+      ST.excl=$$('#mBody input:checked').map(function(c){return c.value});saveSet();renderSet();
+    });
+  }
+  $('#setBody').addEventListener('click',function(e){
+    var sw=e.target.closest('.sw[data-k]');
+    if(sw&&!sw.disabled){
+      var k=sw.dataset.k,on=!ST.v[k];
+      if(k==='wg'){
+        if(S.conn!=='off'){toast('اول اتصال رو قطع کن');return}
+        ST.v.wg=on;if(!on)S.tab='dns';saveSet();renderSet();renderHome();
+        toast(on?'وایرگارد فعال شد. تب‌ها پایین صفحه خانه ظاهر می‌شن':'وایرگارد خاموش شد');return;
+      }
+      if(k==='ipv4'&&!on){
+        openModal('هشدار','<p>بیشتر نسخه‌های اندروید وقتی اپ فعاله و هیچ آدرس IPv4 داده نشده، به اینترنت دسترسی ندارن. باید روی گوشی خودت امتحان کنی.</p>','تأیید',function(){ST.v.ipv4=false;saveSet();renderSet()});
+        return;
+      }
+      if(k==='pin'&&on&&!ST.pinSet){pinModal();return}
+      ST.v[k]=on;saveSet();renderSet();return;
+    }
+    var a=e.target.closest('[data-act]');
+    if(a&&!a.disabled){if(a.dataset.act==='pin')pinModal();if(a.dataset.act==='excl')appsModal()}
+  });
+  $('#setBody').addEventListener('change',function(e){
+    if(e.target.id==='numTimeout'){ST.timeout=Math.max(100,parseInt(e.target.value,10)||1500);saveSet();e.target.value=ST.timeout}
+  });
+
+  /* drawer */
+  function openDrawer(){
+    $('#drawer').classList.add('open');$('#scrim').classList.add('open');
+    $('#drawer').removeAttribute('aria-hidden');$('#burger').setAttribute('aria-expanded','true');
+    $('#drawerClose').focus();
+  }
+  function closeDrawer(quiet){
+    var d=$('#drawer');if(!d||!d.classList.contains('open'))return;
+    d.classList.remove('open');$('#scrim').classList.remove('open');
+    d.setAttribute('aria-hidden','true');$('#burger').setAttribute('aria-expanded','false');
+    if(!quiet)$('#burger').focus();
+  }
+  $('#burger').addEventListener('click',openDrawer);
+  $('#drawerClose').addEventListener('click',function(){closeDrawer()});
+  $('#scrim').addEventListener('click',function(){closeDrawer()});
+  document.addEventListener('keydown',function(e){
+    if(e.key!=='Escape')return;
+    if(!$('#modal').hidden)closeModal();else closeDrawer();
+  });
+  document.addEventListener('click',function(e){
+    var b=e.target.closest('[data-copytxt]');if(!b)return;
+    var v=b.dataset.copytxt;
+    try{navigator.clipboard.writeText(v).then(function(){toast('کپی شد: '+v)},function(){toast('کپی نشد')})}catch(err){toast('کپی نشد')}
+  });
+
+  syncInputs();buildWg();renderSet();renderChips();renderList();renderHome();
+
+  /* polish helpers */
+  function stagger(name){
+    var sec=$('#s-'+name);if(!sec)return;
+    var els=sec.querySelectorAll('.item,#setBody>*,.warn li,.faq details,.appcard,.fgap>div,.v6row,.acts2');
+    for(var i=0;i<els.length;i++)els[i].style.setProperty('--i',Math.min(i,9));
+    sec.classList.add('stag');clearTimeout(sec._st);sec._st=setTimeout(function(){sec.classList.remove('stag')},1100);
+  }
+  function buzz(p){try{if(navigator.vibrate)navigator.vibrate(p)}catch(e){}}
+  document.addEventListener('click',function(e){if(e.target.closest('button:not(:disabled),a.btn'))buzz(8)});
+  if(window.MutationObserver){
+    var mo=new MutationObserver(function(ms){ms.forEach(function(m){var t=m.target.nodeType===1?m.target:m.target.parentNode;if(t&&t.classList){t.classList.remove('swap');void t.offsetWidth;t.classList.add('swap')}})});
+    ['#stTitle','#stSub','#pathMsg'].forEach(function(s){var el=$(s);if(el)mo.observe(el,{childList:true})});
+    var cs=$('#chip');if(cs)new MutationObserver(function(){}).observe(cs,{attributes:true});
+  }
+  var lastConn='off';
+  new MutationObserver(function(){
+    var c=$('#ringbox').dataset.s;
+    if(c==='on'&&lastConn!=='on'){var r=$('#ringbox');r.classList.remove('burst');void r.offsetWidth;r.classList.add('burst');buzz([18,50,18])}
+    lastConn=c;
+  }).observe($('#ringbox'),{attributes:true,attributeFilter:['data-s']});
+  stagger('home');
+})();
+</script>
+
+</body></html>
